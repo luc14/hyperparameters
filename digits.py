@@ -6,6 +6,7 @@ from sklearn.model_selection import cross_val_score, train_test_split, Parameter
 from sklearn.utils import shuffle
 import math
 import time
+import datetime
 import warnings
 from sklearn.preprocessing import StandardScaler
 
@@ -57,7 +58,10 @@ def evaluate_model(X, y, nn):
         y_pred = nn.predict(X[part])
         result[part + '_accuracy'] = accuracy_score(y[part], y_pred)
         y_pred_prob = nn.predict_proba(X[part])
-        result[part + '_log_loss'] = log_loss(y[part], y_pred_prob)
+        try:
+            result[part + '_log_loss'] = log_loss(y[part], y_pred_prob)
+        except:
+            result[part + '_log_loss'] = 'Error'
     
     #cv_accuracy = cross_val_score(nn, X, y, scoring='accuracy', cv=3).mean()
     #cv_logloss = cross_val_score(nn, X, y, scoring='log_loss', cv=3).mean()    
@@ -104,7 +108,7 @@ def main():
     X, y = extract_data(data, n)
     activation = 'tanh'
     param_dict = {'batch_size': [100, 200], 'momentum': [0.9, 0.99 ], 'learning_rate_init':[0.001, 0.01, 0.1]}
-    
+    #param_dict = {'batch_size': [200], 'momentum': [0.9], 'learning_rate_init':[0.1]}
     for param in ParameterGrid(param_dict):       
         nn = MLPClassifier(algorithm='sgd', 
                            tol=float('-inf'),
@@ -117,8 +121,12 @@ def main():
         nn_params.update(param)
         nn.set_params(**nn_params)
         #nn = MLPClassifier(**nn_params)
-        time_limits = list(range(60, 600, 60))
-        evaluation_list = trainer_by_time(X, y, time_limits, nn)
+        time_limits = list(range(1, 60, 60))
+        try:
+            evaluation_list = trainer_by_time(X, y, time_limits, nn)
+        except:
+            evaluation_list = [{}]
+            
         for i in range(len(evaluation_list)):
             evaluation = evaluation_list[i]
             record = {}
@@ -135,7 +143,9 @@ def main():
     cols = [item for item in cols if item not in keys]
     cols += keys
     df = df.reindex(columns=cols)
+    now = datetime.datetime.now()    
     result_file = open('result.txt', 'a')
+    print(now,file=result_file)
     print(df)
     print(df,file=result_file)
     
